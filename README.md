@@ -1,12 +1,20 @@
+
+<div align="center">
+
 # AI Product Evaluation Workbench
 
 **大模型应用评测与 Prompt 优化平台**
 
-[Python](https://www.python.org/)
-[Streamlit](https://streamlit.io)
-[License](LICENSE)
+Streamlit · SQLite · OpenAI-Compatible API · ChromaDB · Prompt Evaluation · RAG Evaluation
 
-> 本项目为字节跳动火山方舟 / 大模型平台 / AI Agent 产品实习岗位投递作品集，完整实现大模型应用上线前的评测与迭代闭环。
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![UI](https://img.shields.io/badge/UI-Streamlit-red)
+![Storage](https://img.shields.io/badge/Storage-SQLite-gray)
+![LLM](https://img.shields.io/badge/LLM-OpenAI--Compatible-blueviolet)
+![RAG](https://img.shields.io/badge/RAG-ChromaDB-brightgreen)
+
+</div>
 
 ---
 
