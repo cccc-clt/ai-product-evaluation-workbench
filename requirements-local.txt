@@ -1,0 +1,6 @@
+# 本地 Embedding 模式依赖（含 PyTorch，体积较大）
+# 仅用于本地开发，请勿在 Streamlit Cloud 中配置为本应用的依赖文件
+# 安装方式：pip install -r requirements-local.txt
+-r requirements.txt
+sentence-transformers>=2.3.0
+torch>=2.0.0

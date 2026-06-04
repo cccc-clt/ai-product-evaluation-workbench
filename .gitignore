@@ -10,7 +10,13 @@ data/*.db
 data/chroma/
 data/uploads/
 *.pdf
+
+# Ignore user uploaded text files, but keep deployment files
 *.txt
+!requirements.txt
+!requirements-local.txt
+!runtime.txt
+
 !data/.gitkeep
 .streamlit/secrets.toml
 .idea/
@@ -20,3 +26,7 @@ dist/
 build/
 .DS_Store
 Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/*.local.json
