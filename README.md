@@ -124,8 +124,9 @@ flowchart LR
 │   └── verify.py                        # 冒烟测试脚本
 ├── data/                                # SQLite + ChromaDB（运行时生成，不上传）
 ├── .env.example                         # 环境变量配置模板
-├── requirements.txt                     # 标准依赖（Streamlit Cloud 兼容）
-├── requirements-local.txt               # 本地 Embedding 可选依赖（含 torch）
+├── requirements.txt                     # 标准依赖（Streamlit Cloud 使用此文件）
+├── requirements-local.txt               # 本地 Embedding 可选依赖（勿用于 Cloud）
+├── runtime.txt                          # Python 版本（Streamlit Cloud：3.11）
 ├── AGENTS.md                            # AI 编程助手协作规范（开发者参考）
 └── LICENSE                              # MIT 开源许可
 ```
@@ -234,9 +235,17 @@ DEFAULT_MAX_TOKENS=1024
 **Streamlit Cloud 部署：**
 
 1. Fork 本仓库到你的 GitHub 账号
-2. 在 [share.streamlit.io](https://share.streamlit.io) 连接仓库，入口文件选 `app.py`
-3. 在 **Secrets** 面板填写与 `.env` 同名的变量
-4. `EMBEDDING_MODE` 请设为 `api`（`local` 模式含 PyTorch，超出 Streamlit Cloud 内存限制）
+2. 在 [share.streamlit.io](https://share.streamlit.io) 连接仓库，**Main file path** 选 `app.py`
+3. **依赖文件必须使用根目录的 `requirements.txt`**，不要使用 `requirements-local.txt`（后者含 `sentence-transformers` 与 `torch`，体积大且不适合 Cloud）
+4. Python 版本由根目录 `runtime.txt` 指定（`python-3.11`）
+5. 在 **Secrets** 面板填写与 `.env` 同名的变量
+6. `EMBEDDING_MODE` 请设为 `api`（`local` 模式需本地依赖，超出 Streamlit Cloud 内存限制）
+
+**若部署后仍报 `ModuleNotFoundError`（如 `No module named 'dotenv'`）：**
+
+- 确认 Cloud 应用设置中的依赖文件为 **`requirements.txt`**（其中已包含 `python-dotenv>=1.0.0`）
+- 在应用管理页执行 **Clear cache**（清除依赖缓存）
+- 再点击 **Reboot app**（重新安装依赖并启动）
 
 > **注意**：Streamlit Cloud 每次重启会清空 `data/` 目录（SQLite + ChromaDB），实验记录不会持久保存。
 
