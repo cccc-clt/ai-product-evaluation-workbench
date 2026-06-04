@@ -58,6 +58,8 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS model_comparisons (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 question TEXT NOT NULL,
+                temperature REAL,
+                max_tokens INTEGER,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -84,6 +86,8 @@ def init_db() -> None:
                 tags TEXT,
                 user_score INTEGER,
                 latency_ms REAL,
+                temperature REAL,
+                max_tokens INTEGER,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -105,6 +109,26 @@ def init_db() -> None:
             );
             """
         )
+        _migrate_schema(conn)
+
+
+def _column_exists(conn: sqlite3.Connection, table: str, column: str) -> bool:
+    """Return True if a column exists on the given table."""
+    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+    return any(row[1] == column for row in rows)
+
+
+def _migrate_schema(conn: sqlite3.Connection) -> None:
+    """Add missing columns to existing databases without breaking data."""
+    migrations = [
+        ("model_comparisons", "temperature", "REAL"),
+        ("model_comparisons", "max_tokens", "INTEGER"),
+        ("rag_evaluations", "temperature", "REAL"),
+        ("rag_evaluations", "max_tokens", "INTEGER"),
+    ]
+    for table, column, col_type in migrations:
+        if not _column_exists(conn, table, column):
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
 
 
 def _now_version() -> str:
@@ -160,13 +184,18 @@ def save_prompt_experiment(
 def save_model_comparison(
     question: str,
     items: list[dict[str, Any]],
+    temperature: float | None = None,
+    max_tokens: int | None = None,
 ) -> int:
     """Save comparison header and per-model items."""
     init_db()
     with get_connection() as conn:
         cur = conn.execute(
-            "INSERT INTO model_comparisons (question) VALUES (?)",
-            (question,),
+            """
+            INSERT INTO model_comparisons (question, temperature, max_tokens)
+            VALUES (?, ?, ?)
+            """,
+            (question, temperature, max_tokens),
         )
         comp_id = cur.lastrowid or 0
         for item in items:
@@ -200,6 +229,8 @@ def save_rag_evaluation(
     tags: list[str],
     user_score: int | None,
     latency_ms: float = 0,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
 ) -> int:
     """Insert RAG evaluation record."""
     init_db()
@@ -207,8 +238,9 @@ def save_rag_evaluation(
         cur = conn.execute(
             """
             INSERT INTO rag_evaluations (
-                doc_name, question, answer, citations_json, tags, user_score, latency_ms
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                doc_name, question, answer, citations_json, tags, user_score,
+                latency_ms, temperature, max_tokens
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 doc_name,
@@ -218,6 +250,8 @@ def save_rag_evaluation(
                 tags_to_json(tags),
                 user_score,
                 latency_ms,
+                temperature,
+                max_tokens,
             ),
         )
         return cur.lastrowid or 0
@@ -292,6 +326,8 @@ def seed_demo_data_if_empty() -> bool:
 
     compare_id = save_model_comparison(
         question="请为上海三日游生成一个面向年轻用户的行程建议。",
+        temperature=0.7,
+        max_tokens=1024,
         items=[
             {
                 "model": "gpt-4o-mini",
@@ -337,6 +373,8 @@ def seed_demo_data_if_empty() -> bool:
         tags=["引用错误", "回答太泛"],
         user_score=2,
         latency_ms=760,
+        temperature=0.7,
+        max_tokens=1024,
     )
     save_user_feedback(
         source_type="rag",

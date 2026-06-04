@@ -8,7 +8,7 @@ import pandas as pd
 from src.config import get_session_settings
 from src.database import save_model_comparison, save_user_feedback
 from src.llm_client import chat
-from src.ui import setup_page
+from src.ui import render_generation_metadata, setup_page
 from src.utils import estimate_cost, format_latency, is_ark_endpoint, parse_model_list, render_api_warning
 
 setup_page("多模型对比", "📊")
@@ -18,6 +18,8 @@ st.caption("同一问题横向对比多个模型的回答质量、速度与成�
 
 api_ok = render_api_warning()
 settings = get_session_settings()
+temperature = settings.temperature
+max_tokens = settings.max_tokens
 
 question = st.text_area("测试问题", height=120, placeholder="输入要测试的问题...")
 models_text = st.text_input(
@@ -48,8 +50,8 @@ if run:
                 system_prompt=system_prompt,
                 user_prompt=question,
                 model=model_name,
-                temperature=settings.default_temperature,
-                max_tokens=settings.default_max_tokens,
+                temperature=temperature,
+                max_tokens=max_tokens,
                 settings=settings,
             )
             cost = estimate_cost(
@@ -70,6 +72,8 @@ if run:
         st.session_state["compare_results"] = {
             "question": question,
             "system_prompt": system_prompt,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
             "items": results,
         }
 
@@ -78,6 +82,16 @@ if "compare_results" in st.session_state:
     items = data["items"]
     st.divider()
     st.subheader("对比汇总")
+    total_input = sum(it["input_tokens"] for it in items)
+    total_output = sum(it["output_tokens"] for it in items)
+    render_generation_metadata(
+        model=f"{len(items)} 个模型",
+        temperature=data.get("temperature", temperature),
+        max_tokens=data.get("max_tokens", max_tokens),
+        latency_ms=sum(it["latency_ms"] for it in items),
+        input_tokens=total_input,
+        output_tokens=total_output,
+    )
 
     df = pd.DataFrame(
         [
@@ -125,7 +139,12 @@ if "compare_results" in st.session_state:
                     "notes": st.session_state.get(f"compare_notes_{idx}", ""),
                 }
             )
-        comp_id = save_model_comparison(data["question"], save_items)
+        comp_id = save_model_comparison(
+            data["question"],
+            save_items,
+            temperature=data.get("temperature"),
+            max_tokens=data.get("max_tokens"),
+        )
         for item in save_items:
             save_user_feedback(
                 source_type="compare",

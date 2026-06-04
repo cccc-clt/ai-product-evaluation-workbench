@@ -23,8 +23,8 @@ class ConfigTests(unittest.TestCase):
         ):
             settings = get_settings()
 
-        self.assertEqual(settings.default_temperature, 0.7)
-        self.assertEqual(settings.default_max_tokens, 1024)
+        self.assertEqual(settings.temperature, 0.7)
+        self.assertEqual(settings.max_tokens, 1024)
 
     def test_settings_have_required_defaults(self):
         settings = get_settings()

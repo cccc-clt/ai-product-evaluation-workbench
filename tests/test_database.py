@@ -78,6 +78,36 @@ class DatabaseTests(unittest.TestCase):
         self.assertFalse(second)
         self.assertGreater(stats["total_experiments"], 0)
 
+    def test_schema_migration_adds_generation_columns(self):
+        database.init_db()
+        with database.get_connection() as conn:
+            for table, column in [
+                ("model_comparisons", "temperature"),
+                ("model_comparisons", "max_tokens"),
+                ("rag_evaluations", "temperature"),
+                ("rag_evaluations", "max_tokens"),
+            ]:
+                self.assertTrue(database._column_exists(conn, table, column))
+
+        compare_id = database.save_model_comparison(
+            "migration test",
+            [{"model": "gpt-4o-mini", "response": "ok"}],
+            temperature=0.5,
+            max_tokens=512,
+        )
+        rag_id = database.save_rag_evaluation(
+            "doc.txt",
+            "q",
+            "a",
+            [],
+            [],
+            3,
+            temperature=0.8,
+            max_tokens=2048,
+        )
+        self.assertGreater(compare_id, 0)
+        self.assertGreater(rag_id, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

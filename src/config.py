@@ -42,8 +42,8 @@ class Settings:
     embedding_mode: str
     embedding_model: str
     local_embedding_model: str
-    default_temperature: float
-    default_max_tokens: int
+    temperature: float
+    max_tokens: int
 
 
 def get_settings() -> Settings:
@@ -61,8 +61,8 @@ def get_settings() -> Settings:
         local_embedding_model=os.getenv(
             "LOCAL_EMBEDDING_MODEL", "all-MiniLM-L6-v2"
         ).strip(),
-        default_temperature=_get_float_env("DEFAULT_TEMPERATURE", 0.7),
-        default_max_tokens=_get_int_env("DEFAULT_MAX_TOKENS", 1024),
+        temperature=_get_float_env("DEFAULT_TEMPERATURE", 0.7),
+        max_tokens=_get_int_env("DEFAULT_MAX_TOKENS", 1024),
     )
 
 
@@ -84,8 +84,8 @@ def get_session_settings() -> Settings:
         local_embedding_model=ss.get(
             "local_embedding_model", base.local_embedding_model
         ),
-        default_temperature=ss.get("default_temperature", base.default_temperature),
-        default_max_tokens=ss.get("default_max_tokens", base.default_max_tokens),
+        temperature=ss.get("temperature", base.temperature),
+        max_tokens=ss.get("max_tokens", base.max_tokens),
     )
 
 

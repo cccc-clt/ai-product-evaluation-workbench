@@ -60,11 +60,11 @@ Streamlit · SQLite · OpenAI-Compatible API · ChromaDB · Prompt Evaluation ·
 
 | 模块             | 功能说明                                                                                                                                               | 体现的 AI 产品能力                         |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| **Prompt 实验台** | 6 种业务场景模板（客服问答、文档总结、简历润色、数据分析、代码解释、自定义），支持 System/User Prompt 编辑、temperature / max_tokens 参数调节，自动生成版本号（时间戳），记录 Token 消耗与 USD 成本估算，人工评分后持久化至 SQLite | Prompt Engineering、场景模板设计、参数调优、版本管理 |
-| **多模型效果对比**    | 同一问题一键调用多个 OpenAI-compatible 模型，输出延迟、Token 消耗、成本对比表，支持对每个模型人工评分（1-5）和优缺点备注，对比记录持久化                                                                 | 模型选型与横向评测、性价比分析                     |
-| **RAG 文档问答评测** | 上传 PDF/TXT 文档，自动分块（默认 500 字符 / 50 overlap）并建立 ChromaDB 向量索引；问答结果附引用片段溯源与相关度评分；支持 8 类问题标签（幻觉、引用错误、回答太泛、没有按照格式输出、理解错问题、答案太短、速度太慢、成本太高）打标持久化          | RAG 链路理解、幻觉检测、检索质量评估、标签体系设计         |
+| **Prompt 实验台** | 6 种业务场景模板（客服问答、文档总结、简历润色、数据分析、代码解释、自定义），支持 System/User Prompt 编辑，侧边栏统一调节 temperature / max_tokens，自动生成版本号（时间戳），记录 Token 消耗与 USD 成本估算，人工评分后持久化至 SQLite | Prompt Engineering、场景模板设计、参数调优、版本管理 |
+| **多模型效果对比**    | 同一问题一键调用多个 OpenAI-compatible 模型，使用侧边栏当前 temperature / max_tokens，输出延迟、Token 消耗、成本对比表，支持对每个模型人工评分（1-5）和优缺点备注，对比记录持久化                                                                 | 模型选型与横向评测、性价比分析                     |
+| **RAG 文档问答评测** | 上传 PDF/TXT 文档，自动分块（默认 500 字符 / 50 overlap）并建立 ChromaDB 向量索引；问答时使用侧边栏生成参数；结果附引用片段溯源与相关度评分；支持 8 类问题标签（幻觉、引用错误、回答太泛、没有按照格式输出、理解错问题、答案太短、速度太慢、成本太高）打标持久化          | RAG 链路理解、幻觉检测、检索质量评估、标签体系设计         |
 | **用户反馈与评测看板**  | 聚合 Prompt 实验、模型对比、RAG 评测的人工评分；Plotly 可视化模型平均得分（柱状图）、RAG 问题标签分布（饼图）、场景测试次数分布；展示最近实验记录明细                                                             | 数据分析、用户反馈聚合、评测指标设计                  |
-| **AI 自动优化建议**  | 读取评分 < 3 的低分样本与高频问题标签，调用 LLM 生成 Prompt / 模型选择 / 参数调整 / RAG 检索 / 产品体验五类结构化建议，分 Tab 展示，支持报告保存                                                        | LLM 辅助决策、结构化分析、产品迭代方案输出             |
+| **AI 自动优化建议**  | 读取评分 < 3 的低分样本与高频问题标签，使用侧边栏当前 temperature / max_tokens 调用 LLM 生成 Prompt / 模型选择 / 参数调整 / RAG 检索 / 产品体验五类结构化建议，分 Tab 展示，支持报告保存                                                        | LLM 辅助决策、结构化分析、产品迭代方案输出             |
 | **Demo 数据生成**  | 评测看板内置「生成 Demo 数据」按钮，无需配置 API Key 即可预览完整看板图表效果                                                                                                     | Demo 设计意识、产品展示能力                    |
 
 
@@ -215,8 +215,9 @@ MODEL_NAME=your_endpoint_id                          # 对话模型名称 / 火�
 EMBEDDING_MODE=api                                   # Embedding 模式：api 或 local
 EMBEDDING_MODEL=text-embedding-3-small               # API Embedding 模型
 LOCAL_EMBEDDING_MODEL=all-MiniLM-L6-v2               # 本地 Embedding 模型（EMBEDDING_MODE=local 时生效）
-DEFAULT_TEMPERATURE=0.7
-DEFAULT_MAX_TOKENS=1024
+# 以下为生成参数初始默认值，可在应用侧边栏「生成参数」中实时调整
+DEFAULT_TEMPERATURE=0.7                              # 初始 Temperature（0.0–2.0，越低越稳定，越高越发散）
+DEFAULT_MAX_TOKENS=1024                              # 初始最大输出 Tokens（256–4096，影响回答长度与成本）
 ```
 
 
@@ -228,9 +229,11 @@ DEFAULT_MAX_TOKENS=1024
 | `EMBEDDING_MODE`        | `api`（推荐）或 `local`                 | `api`                                      |
 | `EMBEDDING_MODEL`       | API Embedding 模型                   | `text-embedding-3-small`                   |
 | `LOCAL_EMBEDDING_MODEL` | 本地 Embedding 模型（可选）                | `all-MiniLM-L6-v2`                         |
+| `DEFAULT_TEMPERATURE`   | 生成参数初始默认值；可在侧边栏实时调整，影响回答稳定性与创造性       | `0.7`                                      |
+| `DEFAULT_MAX_TOKENS`    | 最大输出 Tokens 初始默认值；可在侧边栏实时调整，影响回答长度与成本 | `1024`                                     |
 
 
-> 以上配置也可在应用**侧边栏**实时修改，无需重启。
+> 以上配置也可在应用**侧边栏**实时修改，无需重启。`.env` 中的 `DEFAULT_TEMPERATURE` 和 `DEFAULT_MAX_TOKENS` 仅为页面首次加载时的初始值；在侧边栏「生成参数」中调整后，所有 Prompt 实验、多模型对比、RAG 问答与 AI 优化建议均会使用当前设置。
 
 **Streamlit Cloud 部署：**
 

@@ -74,8 +74,8 @@ def main() -> None:
         embedding_mode=s.embedding_mode,
         embedding_model=s.embedding_model,
         local_embedding_model=s.local_embedding_model,
-        default_temperature=s.default_temperature,
-        default_max_tokens=s.default_max_tokens,
+        temperature=s.temperature,
+        max_tokens=s.max_tokens,
     )
     result = chat_completion("system", "hello", settings=no_key)
     assert result.error and "API Key" in result.error

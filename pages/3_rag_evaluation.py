@@ -7,8 +7,8 @@ import streamlit as st
 from src.config import get_session_settings
 from src.database import save_rag_evaluation, save_user_feedback
 from src.rag_engine import build_index, chunk_text, load_document, query_rag
-from src.ui import setup_page
-from src.utils import RAG_ISSUE_TAGS, format_latency, render_api_warning
+from src.ui import render_generation_metadata, setup_page
+from src.utils import RAG_ISSUE_TAGS, render_api_warning
 
 setup_page("RAG 文档问答评测", "📄")
 
@@ -17,6 +17,8 @@ st.caption("上传 PDF/TXT，建立向量索引，评测检索增强问答效果
 
 api_ok = render_api_warning()
 settings = get_session_settings()
+temperature = settings.temperature
+max_tokens = settings.max_tokens
 
 uploaded = st.file_uploader("上传文档 (PDF / TXT)", type=["pdf", "txt"])
 
@@ -56,6 +58,9 @@ if st.session_state.get("rag_doc_id"):
                     st.session_state["rag_doc_id"],
                     question,
                     model=model,
+                    settings=settings,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
                 )
             if result.error:
                 st.error(result.error)
@@ -63,12 +68,17 @@ if st.session_state.get("rag_doc_id"):
                 st.session_state["last_rag"] = {
                     "doc_name": st.session_state.get("rag_doc_name", ""),
                     "question": question,
+                    "model": result.model or model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
                     "answer": result.answer,
                     "citations": [
                         {"text": c.text, "source": c.source, "score": c.score}
                         for c in result.citations
                     ],
                     "latency_ms": result.latency_ms,
+                    "input_tokens": result.input_tokens,
+                    "output_tokens": result.output_tokens,
                 }
                 st.success("回答已生成")
 
@@ -76,7 +86,14 @@ if "last_rag" in st.session_state:
     rag = st.session_state["last_rag"]
     st.divider()
     st.subheader("回答结果")
-    st.metric("响应时间", format_latency(rag["latency_ms"]))
+    render_generation_metadata(
+        model=rag.get("model", settings.model_name),
+        temperature=rag.get("temperature", temperature),
+        max_tokens=rag.get("max_tokens", max_tokens),
+        latency_ms=rag["latency_ms"],
+        input_tokens=rag.get("input_tokens", 0),
+        output_tokens=rag.get("output_tokens", 0),
+    )
     st.markdown(rag["answer"])
 
     st.subheader("引用片段")
@@ -102,6 +119,8 @@ if "last_rag" in st.session_state:
             tags=selected_tags,
             user_score=user_score,
             latency_ms=rag["latency_ms"],
+            temperature=rag.get("temperature"),
+            max_tokens=rag.get("max_tokens"),
         )
         save_user_feedback(
             source_type="rag",

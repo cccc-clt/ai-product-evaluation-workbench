@@ -12,7 +12,7 @@ from src.evaluator import (
     parse_advice_sections,
 )
 from src.llm_client import generate_optimization_advice
-from src.ui import setup_page
+from src.ui import render_generation_metadata, setup_page
 from src.utils import render_api_warning
 
 setup_page("AI 优化建议", "💡")
@@ -22,6 +22,8 @@ st.caption("基于低分样本与用户反馈，自动生成 Prompt、模型、R
 
 api_ok = render_api_warning()
 settings = get_session_settings()
+temperature = settings.temperature
+max_tokens = settings.max_tokens
 
 context = collect_optimization_context()
 stats = context["stats"]
@@ -41,19 +43,43 @@ if stats.get("tag_counts"):
 if st.button("生成优化建议", type="primary", disabled=not api_ok):
     with st.spinner("分析评测数据并生成建议..."):
         prompt = build_advisor_prompt(context)
-        content, err = generate_optimization_advice(prompt, settings)
+        content, err, result = generate_optimization_advice(
+            prompt,
+            settings,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
     if err:
         st.error(err)
     else:
         st.session_state["advisor_content"] = content
         st.session_state["advisor_sample_count"] = context["sample_count"]
+        st.session_state["advisor_metadata"] = {
+            "model": result.model if result else settings.model_name,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "latency_ms": result.latency_ms if result else 0,
+            "input_tokens": result.input_tokens if result else 0,
+            "output_tokens": result.output_tokens if result else 0,
+        }
         st.success("优化建议已生成")
 
 if "advisor_content" in st.session_state:
     content = st.session_state["advisor_content"]
     sections = parse_advice_sections(content)
+    metadata = st.session_state.get("advisor_metadata", {})
 
     st.divider()
+    if metadata:
+        render_generation_metadata(
+            model=metadata.get("model", settings.model_name),
+            temperature=metadata.get("temperature", temperature),
+            max_tokens=metadata.get("max_tokens", max_tokens),
+            latency_ms=metadata.get("latency_ms", 0),
+            input_tokens=metadata.get("input_tokens", 0),
+            output_tokens=metadata.get("output_tokens", 0),
+        )
+
     tabs = st.tabs(
         [
             "Prompt 优化",

@@ -12,7 +12,7 @@ from typing import Any
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
-from src.config import CHROMA_PATH, get_session_settings
+from src.config import CHROMA_PATH, Settings, get_session_settings
 from src.llm_client import chat, embed_texts
 
 
@@ -32,6 +32,9 @@ class RAGResult:
     answer: str
     citations: list[Citation] = field(default_factory=list)
     latency_ms: float = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    model: str = ""
     error: str | None = None
 
     @property
@@ -206,9 +209,14 @@ def query_rag(
     question: str,
     model: str | None = None,
     top_k: int = 3,
+    settings: Settings | None = None,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
 ) -> RAGResult:
     """Retrieve context and generate an answer with citations."""
     import time
+
+    s = settings or get_session_settings()
 
     citations, err = retrieve(doc_id, question, top_k)
     if err:
@@ -228,8 +236,9 @@ def query_rag(
         system_prompt=RAG_SYSTEM,
         user_prompt=user_msg,
         model=model,
-        temperature=0.3,
-        max_tokens=1024,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        settings=s,
     )
     latency = (time.perf_counter() - start) * 1000
 
@@ -240,6 +249,9 @@ def query_rag(
         answer=result.content,
         citations=citations,
         latency_ms=latency,
+        input_tokens=result.input_tokens,
+        output_tokens=result.output_tokens,
+        model=result.model,
     )
 
 

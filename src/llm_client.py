@@ -39,13 +39,15 @@ def chat_completion(
     system_prompt: str,
     user_prompt: str,
     model: str | None = None,
-    temperature: float = 0.7,
-    max_tokens: int = 1024,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
     settings: Settings | None = None,
 ) -> ChatResult:
     """Call chat completions API and return structured result."""
     s = settings or get_session_settings()
     model_name = model or s.model_name
+    temp = s.temperature if temperature is None else temperature
+    max_tok = s.max_tokens if max_tokens is None else max_tokens
 
     if not is_api_configured(s):
         return ChatResult(
@@ -79,8 +81,8 @@ def chat_completion(
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
+            temperature=temp,
+            max_tokens=max_tok,
         )
         latency_ms = (time.perf_counter() - start) * 1000
         choices = getattr(response, "choices", None) or []
@@ -133,8 +135,8 @@ def chat(
     system_prompt: str,
     user_prompt: str,
     model: str | None = None,
-    temperature: float = 0.7,
-    max_tokens: int = 1024,
+    temperature: float | None = None,
+    max_tokens: int | None = None,
     settings: Settings | None = None,
 ) -> ChatResult:
     """Backward-compatible alias for chat_completion."""
@@ -187,8 +189,11 @@ def embed_texts(
 def generate_optimization_advice(
     context: str,
     settings: Settings | None = None,
-) -> tuple[str, str | None]:
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+) -> tuple[str, str | None, ChatResult | None]:
     """Generate structured optimization advice from evaluation context."""
+    s = settings or get_session_settings()
     system = """你是一名资深 AI 产品经理与技术顾问。
 根据用户提供的评测数据与反馈，输出结构化的优化建议。
 请使用 Markdown，并严格包含以下五个二级标题（##）：
@@ -201,11 +206,11 @@ def generate_optimization_advice(
     result = chat(
         system_prompt=system,
         user_prompt=context,
-        model=(settings or get_session_settings()).model_name,
-        temperature=0.5,
-        max_tokens=2048,
-        settings=settings,
+        model=s.model_name,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        settings=s,
     )
     if result.error:
-        return "", result.error
-    return result.content, None
+        return "", result.error, result
+    return result.content, None, result

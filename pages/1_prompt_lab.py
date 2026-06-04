@@ -8,8 +8,8 @@ from src.config import get_session_settings
 from src.database import save_prompt_experiment, save_user_feedback
 from src.llm_client import chat
 from src.prompt_templates import get_scene_names, get_system_prompt
-from src.ui import setup_page
-from src.utils import estimate_cost, format_latency, is_ark_endpoint, render_api_warning
+from src.ui import render_generation_metadata, setup_page
+from src.utils import estimate_cost, is_ark_endpoint, render_api_warning
 
 setup_page("Prompt 实验台", "🧪")
 
@@ -18,6 +18,8 @@ st.caption("选择业务场景，调试 System / User Prompt，记录实验结�
 
 api_ok = render_api_warning()
 settings = get_session_settings()
+temperature = settings.temperature
+max_tokens = settings.max_tokens
 
 scenes = get_scene_names()
 col1, col2 = st.columns([1, 2])
@@ -25,22 +27,6 @@ col1, col2 = st.columns([1, 2])
 with col1:
     scene = st.selectbox("业务场景", scenes, key="prompt_scene")
     model = st.text_input("模型名称", value=settings.model_name, key="prompt_model")
-    temperature = st.slider(
-        "Temperature",
-        0.0,
-        2.0,
-        float(settings.default_temperature),
-        0.1,
-        key="prompt_temp",
-    )
-    max_tokens = st.number_input(
-        "Max Tokens",
-        min_value=64,
-        max_value=8192,
-        value=int(settings.default_max_tokens),
-        step=64,
-        key="prompt_max_tokens",
-    )
 
 with col2:
     default_system = get_system_prompt(scene)
@@ -67,7 +53,7 @@ if run:
                 user_prompt=user_prompt,
                 model=model,
                 temperature=temperature,
-                max_tokens=int(max_tokens),
+                max_tokens=max_tokens,
                 settings=settings,
             )
         if result.error:
@@ -83,7 +69,7 @@ if run:
                 "user_prompt": user_prompt,
                 "model": model,
                 "temperature": temperature,
-                "max_tokens": int(max_tokens),
+                "max_tokens": max_tokens,
                 "response": result.content,
                 "latency_ms": result.latency_ms,
                 "input_tokens": result.input_tokens,
@@ -97,12 +83,19 @@ if "last_experiment" in st.session_state:
     exp = st.session_state["last_experiment"]
     st.divider()
     st.subheader("实验结果")
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("响应时间", format_latency(exp["latency_ms"]))
-    m2.metric("Input Tokens", exp["input_tokens"])
-    m3.metric("Output Tokens", exp["output_tokens"])
+    render_generation_metadata(
+        model=exp["model"],
+        temperature=exp["temperature"],
+        max_tokens=exp["max_tokens"],
+        latency_ms=exp["latency_ms"],
+        input_tokens=exp["input_tokens"],
+        output_tokens=exp["output_tokens"],
+    )
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Input Tokens", exp["input_tokens"])
+    m2.metric("Output Tokens", exp["output_tokens"])
     cost_label = "估算成本 (USD，¥参考)" if is_ark_endpoint(exp["model"]) else "估算成本 (USD)"
-    m4.metric(cost_label, f"${exp['cost']:.6f}")
+    m3.metric(cost_label, f"${exp['cost']:.6f}")
     st.markdown(f"**Prompt 版本:** `{exp['version']}`")
     st.markdown("**模型回答**")
     st.markdown(exp["response"])
