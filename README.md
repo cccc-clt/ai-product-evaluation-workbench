@@ -145,20 +145,19 @@ flowchart LR
 
 ## 8. 项目截图
 
-> 将运行截图保存至 `docs/images/` 并按下方文件名命名后，即可在 GitHub 上直接预览。  
-> **快速预览**：启动后进入「评测看板」，点击「生成 Demo 数据」按钮，无需 API Key 即可看到完整图表效果。
-
 | 首页 | Prompt 实验台 |
 |:---:|:---:|
-| ![首页](docs/images/01_home.png) | *占位：补充 `02_prompt_lab.png` 后替换* |
+| ![首页](docs/images/01_home.png) | ![Prompt 实验台](docs/images/02_prompt_lab.png) |
 
 | 多模型效果对比 | RAG 文档问答评测 |
 |:---:|:---:|
-| *占位：补充 `03_model_compare.png`* | *占位：补充 `04_rag_evaluation.png`* |
+| ![多模型效果对比](docs/images/03_model_compare.png) | ![RAG 文档问答评测](docs/images/04_rag_evaluation.png) |
 
-| 评测看板（含 Demo 数据） | AI 自动优化建议 |
+| 评测看板 | AI 自动优化建议 |
 |:---:|:---:|
-| *占位：补充 `05_dashboard.png`* | *占位：补充 `06_advisor.png`* |
+| ![评测看板](docs/images/05_dashboard.png) | ![AI 自动优化建议](docs/images/06_advisor.png) |
+
+> **无 API Key 快速预览**：启动后进入「评测看板」，点击「生成 Demo 数据」，即可查看完整图表效果。
 
 
 ---
